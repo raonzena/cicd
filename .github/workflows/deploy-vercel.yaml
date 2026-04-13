@@ -1,0 +1,43 @@
+name: Vercel Production Deployment
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      # Vercel CLI가 프로젝트를 식별할 수 있도록 환경 변수 추가
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. pnpm 먼저 설치 (최근 버전 권장)
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9 # 또는 사용 중인 버전 명시
+          run_install: true
+
+      # 2. Node.js 설정 (pnpm 설치 후 실행)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22 # 24는 현재(2026년 기준) 최신이나 프로젝트 호환성 확인 필요
+          cache: 'pnpm'
+
+      # 3. Vercel CLI 설치 (전역 설치보다 npx 권장)
+      # 혹은 pnpm add -g vercel 대신 아래 단계를 바로 수행해도 됩니다.
+
+      - name: Pull Vercel Environment Information
+        run: npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Project Artifacts to Vercel
+        run: npx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
